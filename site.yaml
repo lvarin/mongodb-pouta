@@ -1,0 +1,38 @@
+---
+# Run Terraform, collect output and build inventory
+- name: Run Terraform and build inventory
+  hosts: localhost
+  roles:
+  - terraform
+
+# Now wait until all machines are readable
+- name: Create hosts files
+  hosts: all
+  gather_facts: yes
+  tasks:
+  - name: Wait for machine to become reachable
+    wait_for_connection:
+      delay: 30
+      sleep: 10
+  - name: Enumerate all cluster hosts within the hosts file
+    become: yes
+    blockinfile:
+      dest: /etc/hosts
+      marker: "# {mark} ANSIBLE MANAGED: carbonero API Cluster Hosts"
+      content: |
+        {% for host in groups['all'] %}
+        {{ hostvars[host]['ansible_default_ipv4']['address'] }} {{ hostvars[host]['ansible_fqdn'] }} {{ hostvars[host]['ansible_hostname'] }}.novalocal
+        {% endfor %}
+  - name: Set authorized key taken from files
+    authorized_key:
+      user: "{{ ssh_user }}"
+      state: present
+      key: "{{ lookup('file', item) }}"
+    with_fileglob: "keys/*"
+
+- name: Install MongoDB
+  hosts:
+  - mongodb
+  become: yes
+  roles:
+  - mongodb

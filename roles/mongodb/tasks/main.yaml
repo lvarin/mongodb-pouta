@@ -1,0 +1,53 @@
+---
+# tasks file for mongoDB setup
+
+- name: Add Mongo DB GPG key
+  get_url:
+    url: https://www.mongodb.org/static/pgp/server-6.0.asc
+    dest:  /etc/apt/trusted.gpg.d/mongodb-6.asc
+
+- name: Add Mongo DB repository into sources list
+  ansible.builtin.apt_repository:
+    repo: deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse
+    state: present
+
+- name: Install mongoDB
+  package: 
+    name: mongodb-org
+    state: present
+
+- name: Read the yaml
+  slurp:
+    path: /etc/mongod.conf
+  register: r_myfile
+
+- name: extract the data
+  set_fact:
+    mydata: "{{ r_myfile['content'] | b64decode | from_yaml }}"
+
+- name: Patch yaml dictionary
+  set_fact:
+    mydata: "{{ mydata | combine(newdata, recursive=True) }}"
+  vars: 
+    newdata:
+      net:
+        bindIp: "{{ bindIp }}"
+
+- name: Patch yaml dictionary
+  set_fact:
+    mydata: "{{ mydata | combine(newdata, recursive=True) }}"
+  vars: 
+    newdata:
+      security:
+        authorization: "{{ authorization }}"
+
+- name: Write yaml file
+  copy:
+    content: '{{ mydata | to_nice_yaml }}'
+    dest: /etc/mongod.conf
+
+- name: Enable and start mongod
+  service:
+    name: mongod
+    state: started
+    enabled: true

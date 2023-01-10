@@ -1,0 +1,14 @@
+keypair: XXXXXXXX
+network: project_YYYYYYYY
+private_key_path: ~/.ssh/id_rsa
+#
+cidr_ssh: "0.0.0.0/0"
+cidr_list: "193.166.1.0/24,193.166.2.0/24, 193.166.80.0/23, 193.166.85.0/24"
+control_port: 27017
+flavor: "standard.medium"
+image: "Ubuntu-22.04"
+mongodb_prefix: "mongodb"
+ssh_user: "ubuntu"
+#
+bindIp: 0.0.0.0
+authorization: enabled
